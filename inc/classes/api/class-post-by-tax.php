@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Post_By_Tax class.
  *
@@ -16,18 +17,32 @@ use WP_REST_Response;
 /**
  * Class Post_By_Tax
  */
-class Post_By_Tax {
+class Post_By_Tax
+{
 
 	use Singleton;
 
 	/**
+	 * Plugin options
+	 *
+	 * @var object
+	 */
+	private $plugin_options;
+
+	/**
+	 * Route name
+	 *
+	 * @var string
+	 */
+	private $route = '/posts-by-tax';
+
+	/**
 	 * Construct method.
 	 */
-	protected function __construct() {
-
-		$this->plugin_options = get_option( 'hcms_plugin_options' );
+	protected function __construct()
+	{
+		$this->plugin_options = get_option('hcms_plugin_options');
 		$this->setup_hooks();
-
 	}
 
 	/**
@@ -35,21 +50,19 @@ class Post_By_Tax {
 	 *
 	 * @return void
 	 */
-	protected function setup_hooks() {
-
-		$this->route = '/posts-by-tax';
-
+	protected function setup_hooks()
+	{
 		/**
 		 * Action
 		 */
-		add_action( 'rest_api_init', [ $this, 'rest_posts_endpoints' ] );
-
+		add_action('rest_api_init', [$this, 'rest_posts_endpoints']);
 	}
 
 	/**
 	 * Register posts endpoints.
 	 */
-	public function rest_posts_endpoints() {
+	public function rest_posts_endpoints()
+	{
 
 		/**
 		 * Handle Posts Request: GET Request
@@ -67,7 +80,7 @@ class Post_By_Tax {
 			$this->route,
 			[
 				'method'   => 'GET',
-				'callback' => [ $this, 'rest_endpoint_handler' ],
+				'callback' => [$this, 'rest_endpoint_handler'],
 				'permission_callback' => '__return_true',
 			]
 		);
@@ -82,38 +95,36 @@ class Post_By_Tax {
 	 *
 	 * @return WP_Error|WP_REST_Response response object.
 	 */
-	public function rest_endpoint_handler( WP_REST_Request $request ) {
+	public function rest_endpoint_handler(WP_REST_Request $request)
+	{
 
 		$response   = [];
 		$parameters = $request->get_params();
-		$post_type  = ! empty( $parameters['post_type'] ) ? sanitize_text_field( $parameters['post_type'] ) : 'post';
-		$taxonomy   = ! empty( $parameters['taxonomy'] ) ? sanitize_text_field( $parameters['taxonomy'] ) : 'category';
-		$slug       = ! empty( $parameters['slug'] ) ? sanitize_text_field( $parameters['slug'] ) : '';
+		$post_type  = !empty($parameters['post_type']) ? sanitize_text_field($parameters['post_type']) : 'post';
+		$taxonomy   = !empty($parameters['taxonomy']) ? sanitize_text_field($parameters['taxonomy']) : 'category';
+		$slug       = !empty($parameters['slug']) ? sanitize_text_field($parameters['slug']) : '';
 
 		// Error Handling.
 		$error = new WP_Error();
 
-		$latest_posts = $this->get_latest_posts( $post_type, $taxonomy, $slug );
+		$latest_posts = $this->get_latest_posts($post_type, $taxonomy, $slug);
 
 		// If any menus found.
-		if ( ! empty( $hero_section_data ) || ! empty( $search_section_data ) || ! empty( $featured_posts ) || ! empty( $latest_posts ) ) {
+		if (!empty($hero_section_data) || !empty($search_section_data) || !empty($featured_posts) || !empty($latest_posts)) {
 
 			$response['status'] = 200;
 			$response['data']   = [
 				'posts' => $latest_posts,
 			];
-
 		} else {
 
 			// If the posts not found.
-			$error->add( 406, __( 'Data not found', 'rest-api-endpoints' ) );
+			$error->add(406, __('Data not found', 'rest-api-endpoints'));
 
 			return $error;
-
 		}
 
-		return new WP_REST_Response( $response );
-
+		return new WP_REST_Response($response);
 	}
 
 	/**
@@ -125,7 +136,8 @@ class Post_By_Tax {
 	 *
 	 * @return array latest posts
 	 */
-	public function get_latest_posts( $post_type, $taxonomy, $slug ) {
+	public function get_latest_posts($post_type, $taxonomy, $slug)
+	{
 
 		// Ignoring phps for taxonomy query as its required here.
 		$args = [
@@ -146,42 +158,39 @@ class Post_By_Tax {
 
 		];
 
-		$result = new WP_Query( $args );
+		$result = new WP_Query($args);
 
 		$latest_post_ids = $result->get_posts();
 
 		$latest_posts = [];
 
-		if ( ! empty( $latest_post_ids ) && is_array( $latest_post_ids ) ) {
-			foreach ( $latest_post_ids as $post_ID ) {
+		if (!empty($latest_post_ids) && is_array($latest_post_ids)) {
+			foreach ($latest_post_ids as $post_ID) {
 
-				$author_id     = get_post_field( 'post_author', $post_ID );
-				$attachment_id = get_post_thumbnail_id( $post_ID );
+				$author_id     = get_post_field('post_author', $post_ID);
+				$attachment_id = get_post_thumbnail_id($post_ID);
 
 				$post_data                     = [];
 				$post_data['id']               = $post_ID;
-				$post_data['title']            = get_the_title( $post_ID );
-				$post_data['excerpt']          = get_the_excerpt( $post_ID );
-				$post_data['slug']             = get_post_field( 'post_name', $post_ID );
-				$post_data['content']          = get_the_content( null, false, $post_ID );
-				$post_data['date']             = get_the_date( '', $post_ID );
+				$post_data['title']            = get_the_title($post_ID);
+				$post_data['excerpt']          = get_the_excerpt($post_ID);
+				$post_data['slug']             = get_post_field('post_name', $post_ID);
+				$post_data['content']          = get_the_content(null, false, $post_ID);
+				$post_data['date']             = get_the_date('', $post_ID);
 				$post_data['attachment_image'] = [
-					'img_sizes'  => wp_get_attachment_image_sizes( $attachment_id ),
-					'img_src'    => wp_get_attachment_image_src( $attachment_id, 'full' ),
-					'img_srcset' => wp_get_attachment_image_srcset( $attachment_id ),
+					'img_sizes'  => wp_get_attachment_image_sizes($attachment_id),
+					'img_src'    => wp_get_attachment_image_src($attachment_id, 'full'),
+					'img_srcset' => wp_get_attachment_image_srcset($attachment_id),
 				];
 				$post_data['meta']             = [
 					'author_id'   => $author_id,
-					'author_name' => get_the_author_meta( 'display_name', $author_id ),
+					'author_name' => get_the_author_meta('display_name', $author_id),
 				];
 
-				array_push( $latest_posts, $post_data );
-
+				array_push($latest_posts, $post_data);
 			}
 		}
 
 		return $latest_posts;
-
 	}
-
 }

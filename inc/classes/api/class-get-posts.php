@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Get_Posts class.
  *
@@ -16,14 +17,37 @@ use WP_Query;
 /**
  * Class Get_Posts
  */
-class Get_Posts {
+class Get_Posts
+{
 
 	use Singleton;
 
 	/**
+	 * Post per page
+	 *
+	 * @var int
+	 */
+	private $post_per_page = 9;
+
+	/**
+	 * Route name
+	 *
+	 * @var string
+	 */
+	private $route = '/post';
+
+	/**
+	 * Post type
+	 *
+	 * @var string
+	 */
+	private $post_type = 'post';
+
+	/**
 	 * Construct method.
 	 */
-	protected function __construct() {
+	protected function __construct()
+	{
 		$this->setup_hooks();
 	}
 
@@ -32,20 +56,17 @@ class Get_Posts {
 	 *
 	 * @return void
 	 */
-	protected function setup_hooks() {
+	protected function setup_hooks()
+	{
 
-		$this->post_type     = 'post';
-		$this->route         = '/posts';
-		$this->post_per_page = 9;
-
-		add_action( 'rest_api_init', [ $this, 'rest_posts_endpoints' ] );
-
+		add_action('rest_api_init', [$this, 'rest_posts_endpoints']);
 	}
 
 	/**
 	 * Register posts endpoints.
 	 */
-	public function rest_posts_endpoints() {
+	public function rest_posts_endpoints()
+	{
 
 		/**
 		 * Handle Posts Request: GET Request
@@ -61,7 +82,7 @@ class Get_Posts {
 			$this->route,
 			[
 				'method'   => 'GET',
-				'callback' => [ $this, 'rest_endpoint_handler' ],
+				'callback' => [$this, 'rest_endpoint_handler'],
 				'permission_callback' => '__return_true',
 			]
 		);
@@ -76,35 +97,33 @@ class Get_Posts {
 	 *
 	 * @return WP_Error|WP_REST_Response response object.
 	 */
-	public function rest_endpoint_handler( WP_REST_Request $request ) {
+	public function rest_endpoint_handler(WP_REST_Request $request)
+	{
 		$response      = [];
 		$parameters    = $request->get_params();
-		$posts_page_no = ! empty( $parameters['page_no'] ) ? intval( sanitize_text_field( $parameters['page_no'] ) ) : '';
+		$posts_page_no = !empty($parameters['page_no']) ? intval(sanitize_text_field($parameters['page_no'])) : '';
 
 		// Error Handling.
 		$error = new WP_Error();
 
-		$posts_data = $this->get_posts( $posts_page_no );
+		$posts_data = $this->get_posts($posts_page_no);
 
 		// If posts found.
-		if ( ! empty( $posts_data['posts_data'] ) ) {
+		if (!empty($posts_data['posts_data'])) {
 
 			$response['status']      = 200;
 			$response['posts_data']  = $posts_data['posts_data'];
 			$response['found_posts'] = $posts_data['found_posts'];
 			$response['page_count']  = $posts_data['page_count'];
-
 		} else {
 
 			// If the posts not found.
-			$error->add( 406, __( 'Posts not found', 'rest-api-endpoints' ) );
+			$error->add(406, __('Posts not found', 'rest-api-endpoints'));
 
 			return $error;
-
 		}
 
-		return new WP_REST_Response( $response );
-
+		return new WP_REST_Response($response);
 	}
 
 	/**
@@ -115,8 +134,9 @@ class Get_Posts {
 	 *
 	 * @return int
 	 */
-	public function calculate_page_count( $total_found_posts, $post_per_page ) {
-		return ( (int) ( $total_found_posts / $post_per_page ) + ( ( $total_found_posts % $post_per_page ) ? 1 : 0 ) );
+	public function calculate_page_count($total_found_posts, $post_per_page)
+	{
+		return ((int) ($total_found_posts / $post_per_page) + (($total_found_posts % $post_per_page) ? 1 : 0));
 	}
 
 
@@ -127,7 +147,8 @@ class Get_Posts {
 	 *
 	 * @return array Posts.
 	 */
-	public function get_posts( $page_no = 1 ) {
+	public function get_posts($page_no = 1)
+	{
 
 		$args = [
 			'post_type'              => $this->post_type,
@@ -141,11 +162,11 @@ class Get_Posts {
 
 		];
 
-		$latest_post_ids = new WP_Query( $args );
+		$latest_post_ids = new WP_Query($args);
 
-		$post_result = $this->get_required_posts_data( $latest_post_ids->posts );
+		$post_result = $this->get_required_posts_data($latest_post_ids->posts);
 		$found_posts = $latest_post_ids->found_posts;
-		$page_count  = $this->calculate_page_count( $found_posts, $this->post_per_page );
+		$page_count  = $this->calculate_page_count($found_posts, $this->post_per_page);
 
 		return [
 			'posts_data'  => $post_result,
@@ -162,44 +183,43 @@ class Get_Posts {
 	 *
 	 * @return array
 	 */
-	public function get_required_posts_data( $post_ids ) {
+	public function get_required_posts_data($post_ids)
+	{
 
 		$post_result = [];
 
-		if ( empty( $post_ids ) && ! is_array( $post_ids ) ) {
+		if (empty($post_ids) && !is_array($post_ids)) {
 			return $post_result;
 		}
 
-		foreach ( $post_ids as $post_ID ) {
+		foreach ($post_ids as $post_ID) {
 
-			$author_id     = get_post_field( 'post_author', $post_ID );
-			$attachment_id = get_post_thumbnail_id( $post_ID );
+			$author_id     = get_post_field('post_author', $post_ID);
+			$attachment_id = get_post_thumbnail_id($post_ID);
 
 			$post_data                     = [];
 			$post_data['id']               = $post_ID;
-			$post_data['title']            = get_the_title( $post_ID );
-			$post_data['excerpt']          = get_the_excerpt( $post_ID );
-			$post_data['date']             = get_the_date( '', $post_ID );
-			$post_data['slug']             = get_post_field( 'post_name', $post_ID );
+			$post_data['title']            = get_the_title($post_ID);
+			$post_data['excerpt']          = get_the_excerpt($post_ID);
+			$post_data['date']             = get_the_date('', $post_ID);
+			$post_data['slug']             = get_post_field('post_name', $post_ID);
 			$post_data['permalink']        = get_the_permalink($post_ID);
 			$post_data['attach_id']        = $attachment_id;
 			$post_data['attachment_image'] = [
-				'img_sizes'  => wp_get_attachment_image_sizes( $attachment_id ),
-				'img_src'    => wp_get_attachment_image_src( $attachment_id, 'full' ),
-				'img_srcset' => wp_get_attachment_image_srcset( $attachment_id ),
+				'img_sizes'  => wp_get_attachment_image_sizes($attachment_id),
+				'img_src'    => wp_get_attachment_image_src($attachment_id, 'full'),
+				'img_srcset' => wp_get_attachment_image_srcset($attachment_id),
 			];
-			$post_data['categories']       = get_the_category( $post_ID );
+			$post_data['categories']       = get_the_category($post_ID);
 			$post_data['meta']             = [
 				'author_id'   => $author_id,
-				'author_name' => get_the_author_meta( 'display_name', $author_id ),
-				'author_url'  => get_author_posts_url( $author_id ),
+				'author_name' => get_the_author_meta('display_name', $author_id),
+				'author_url'  => get_author_posts_url($author_id),
 			];
 
-			array_push( $post_result, $post_data );
-
+			array_push($post_result, $post_data);
 		}
 
 		return $post_result;
 	}
-
 }

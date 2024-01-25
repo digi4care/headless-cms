@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Get_Post class.
  *
@@ -16,14 +17,30 @@ use WP_Post;
 /**
  * Class Get_Post
  */
-class Get_Post {
+class Get_Post
+{
 
 	use Singleton;
 
 	/**
+	 * Route name
+	 *
+	 * @var string
+	 */
+	private $route = '/post';
+
+	/**
+	 * Post type
+	 *
+	 * @var string
+	 */
+	private $post_type = 'post';
+
+	/**
 	 * Construct method.
 	 */
-	protected function __construct() {
+	protected function __construct()
+	{
 		$this->setup_hooks();
 	}
 
@@ -32,19 +49,16 @@ class Get_Post {
 	 *
 	 * @return void
 	 */
-	protected function setup_hooks() {
-
-		$this->post_type = 'post';
-		$this->route     = '/post';
-
-		add_action( 'rest_api_init', [ $this, 'rest_posts_endpoints' ] );
-
+	protected function setup_hooks()
+	{
+		add_action('rest_api_init', [$this, 'rest_posts_endpoints']);
 	}
 
 	/**
 	 * Register posts endpoints.
 	 */
-	public function rest_posts_endpoints() {
+	public function rest_posts_endpoints()
+	{
 
 		/**
 		 * Handle Posts Request: GET Request
@@ -61,7 +75,7 @@ class Get_Post {
 			$this->route,
 			[
 				'method'   => 'GET',
-				'callback' => [ $this, 'rest_endpoint_handler' ],
+				'callback' => [$this, 'rest_endpoint_handler'],
 				'permission_callback' => '__return_true',
 			]
 		);
@@ -76,40 +90,38 @@ class Get_Post {
 	 *
 	 * @return WP_Error|WP_REST_Response response object.
 	 */
-	public function rest_endpoint_handler( WP_REST_Request $request ) {
+	public function rest_endpoint_handler(WP_REST_Request $request)
+	{
 		$response   = [];
 		$parameters = $request->get_params();
-		$post_id    = ! empty( $parameters['post_id'] ) ? intval( sanitize_text_field( $parameters['post_id'] ) ) : '';
-		$post_slug  = ! empty( $parameters['post_slug'] ) ? sanitize_text_field( $parameters['post_slug'] ) : '';
+		$post_id    = !empty($parameters['post_id']) ? intval(sanitize_text_field($parameters['post_id'])) : '';
+		$post_slug  = !empty($parameters['post_slug']) ? sanitize_text_field($parameters['post_slug']) : '';
 
 		// Error Handling.
 		$error = new WP_Error();
 
 		// Get id from slug
-		if ( ! empty( $post_slug ) ) {
-			$the_post = get_page_by_path( $post_slug, OBJECT, 'post' );
+		if (!empty($post_slug)) {
+			$the_post = get_page_by_path($post_slug, OBJECT, 'post');
 			$post_id = $the_post instanceof WP_Post ? $the_post->ID : $post_id;
 		}
 
-		$post_data = $this->get_required_post_data( $post_id );
+		$post_data = $this->get_required_post_data($post_id);
 
 		// If posts found.
-		if ( ! empty( $post_data ) ) {
+		if (!empty($post_data)) {
 
 			$response['status']    = 200;
 			$response['post_data'] = $post_data;
-
 		} else {
 
 			// If the posts not found.
-			$error->add( 406, __( 'Post not found', 'rest-api-endpoints' ) );
+			$error->add(406, __('Post not found', 'rest-api-endpoints'));
 
 			return $error;
-
 		}
 
-		return new WP_REST_Response( $response );
-
+		return new WP_REST_Response($response);
 	}
 
 	/**
@@ -119,39 +131,39 @@ class Get_Post {
 	 *
 	 * @return array
 	 */
-	public function get_required_post_data( $post_ID ) {
+	public function get_required_post_data($post_ID)
+	{
 
 		$post_data = [];
 
-		if ( empty( $post_ID ) && ! is_array( $post_ID ) ) {
+		if (empty($post_ID) && !is_array($post_ID)) {
 			return $post_data;
 		}
 
-		$author_id     = get_post_field( 'post_author', $post_ID );
-		$attachment_id = get_post_thumbnail_id( $post_ID );
+		$author_id     = get_post_field('post_author', $post_ID);
+		$attachment_id = get_post_thumbnail_id($post_ID);
 
 		$post_data                     = [];
 		$post_data['id']               = $post_ID;
-		$post_data['title']            = get_the_title( $post_ID );
-		$post_data['excerpt']          = get_the_excerpt( $post_ID );
-		$post_data['date']             = get_the_date( '', $post_ID );
-		$post_data['slug']             = get_post_field( 'post_name', $post_ID );
-		$post_data['permalink']        = get_the_permalink( $post_ID );
-		$post_data['content']          = get_post_field( 'post_content', $post_ID );
+		$post_data['title']            = get_the_title($post_ID);
+		$post_data['excerpt']          = get_the_excerpt($post_ID);
+		$post_data['date']             = get_the_date('', $post_ID);
+		$post_data['slug']             = get_post_field('post_name', $post_ID);
+		$post_data['permalink']        = get_the_permalink($post_ID);
+		$post_data['content']          = get_post_field('post_content', $post_ID);
 		$post_data['attachment_image'] = [
-			'img_sizes'  => wp_get_attachment_image_sizes( $attachment_id ),
-			'img_src'    => wp_get_attachment_image_src( $attachment_id, 'full' ),
-			'img_srcset' => wp_get_attachment_image_srcset( $attachment_id ),
+			'img_sizes'  => wp_get_attachment_image_sizes($attachment_id),
+			'img_src'    => wp_get_attachment_image_src($attachment_id, 'full'),
+			'img_srcset' => wp_get_attachment_image_srcset($attachment_id),
 		];
-		$post_data['categories']       = get_the_category( $post_ID );
+		$post_data['categories']       = get_the_category($post_ID);
 		$post_data['meta']             = [
 			'author_id'   => $author_id,
-			'author_name' => get_the_author_meta( 'display_name', $author_id ),
-			'author_url'  => get_author_posts_url( $author_id ),
+			'author_name' => get_the_author_meta('display_name', $author_id),
+			'author_url'  => get_author_posts_url($author_id),
 		];
 
 
 		return $post_data;
 	}
-
 }

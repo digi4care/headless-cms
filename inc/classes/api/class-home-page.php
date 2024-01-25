@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Home_Page class.
  *
@@ -16,18 +17,33 @@ use WP_REST_Response;
 /**
  * Class Home_Page
  */
-class Home_Page {
+class Home_Page
+{
 
 	use Singleton;
 
 	/**
+	 * Plugin options
+	 *
+	 * @var object
+	 */
+	private $plugin_options;
+
+	/**
+	 * Route name
+	 *
+	 * @var string
+	 */
+	private $route = '/home';
+
+	/**
 	 * Construct method.
 	 */
-	protected function __construct() {
+	protected function __construct()
+	{
 
-		$this->plugin_options = get_option( 'hcms_plugin_options' );
+		$this->plugin_options = get_option('hcms_plugin_options');
 		$this->setup_hooks();
-
 	}
 
 	/**
@@ -35,21 +51,19 @@ class Home_Page {
 	 *
 	 * @return void
 	 */
-	protected function setup_hooks() {
-
-		$this->route = '/home';
-
+	protected function setup_hooks()
+	{
 		/**
 		 * Action
 		 */
-		add_action( 'rest_api_init', [ $this, 'rest_posts_endpoints' ] );
-
+		add_action('rest_api_init', [$this, 'rest_posts_endpoints']);
 	}
 
 	/**
 	 * Register posts endpoints.
 	 */
-	public function rest_posts_endpoints() {
+	public function rest_posts_endpoints()
+	{
 
 		/**
 		 * Handle Posts Request: GET Request
@@ -70,7 +84,7 @@ class Home_Page {
 			$this->route,
 			[
 				'methods'  => 'GET',
-				'callback' => [ $this, 'rest_endpoint_handler' ],
+				'callback' => [$this, 'rest_endpoint_handler'],
 				'permission_callback' => '__return_true',
 			]
 		);
@@ -85,23 +99,24 @@ class Home_Page {
 	 *
 	 * @return WP_Error|WP_REST_Response response object.
 	 */
-	public function rest_endpoint_handler( WP_REST_Request $request ) {
+	public function rest_endpoint_handler(WP_REST_Request $request)
+	{
 
 		$response   = [];
 		$parameters = $request->get_params();
-		$post_type  = ! empty( $parameters['post_type'] ) ? sanitize_text_field( $parameters['post_type'] ) : 'post';
-		$taxonomy   = ! empty( $parameters['taxonomy'] ) ? sanitize_text_field( $parameters['taxonomy'] ) : 'category';
+		$post_type  = !empty($parameters['post_type']) ? sanitize_text_field($parameters['post_type']) : 'post';
+		$taxonomy   = !empty($parameters['taxonomy']) ? sanitize_text_field($parameters['taxonomy']) : 'category';
 
 		// Error Handling.
 		$error = new WP_Error();
 
 		$hero_section_data   = $this->get_hero_section();
-		$search_section_data = $this->get_search_section( $taxonomy );
+		$search_section_data = $this->get_search_section($taxonomy);
 		$featured_posts      = $this->get_featured_posts();
-		$latest_posts        = $this->get_latest_posts( $post_type );
+		$latest_posts        = $this->get_latest_posts($post_type);
 
 		// If any menus found.
-		if ( ! empty( $hero_section_data ) || ! empty( $search_section_data ) || ! empty( $featured_posts ) || ! empty( $latest_posts ) ) {
+		if (!empty($hero_section_data) || !empty($search_section_data) || !empty($featured_posts) || !empty($latest_posts)) {
 
 			$data = array(
 				'wordpress_id'         => 220, // Use an id required for the GraphQL query.
@@ -110,17 +125,14 @@ class Home_Page {
 				'featuredPostsSection' => $featured_posts,
 				'latestPostsSection'   => $latest_posts,
 			);
-			return new WP_REST_Response( $data, 200 );
-
+			return new WP_REST_Response($data, 200);
 		} else {
 
 			// If the posts not found.
-			$error->add( 406, __( 'Data not found', 'rest-api-endpoints' ) );
+			$error->add(406, __('Data not found', 'rest-api-endpoints'));
 
 			return $error;
-
 		}
-
 	}
 
 	/**
@@ -128,9 +140,10 @@ class Home_Page {
 	 *
 	 * @return array $hero_section_data Hero Section data
 	 */
-	public function get_hero_section() {
+	public function get_hero_section()
+	{
 
-		if ( empty( $this->plugin_options ) ) {
+		if (empty($this->plugin_options)) {
 			return [];
 		}
 
@@ -151,7 +164,8 @@ class Home_Page {
 	 *
 	 * @return array $search_section_data Hero Section data.
 	 */
-	public function get_search_section( $taxonomy ) {
+	public function get_search_section($taxonomy)
+	{
 
 		// Get latest three categories.
 		$terms = get_terms(
@@ -163,7 +177,7 @@ class Home_Page {
 			]
 		);
 
-		$terms_with_attach = $this->get_terms_with_attach( $terms );
+		$terms_with_attach = $this->get_terms_with_attach($terms);
 
 		$search_section_data = [
 			'searchPlaceholderTxt' => $this->plugin_options['search_placeholder_text'],
@@ -179,14 +193,15 @@ class Home_Page {
 	 *
 	 * @param array $terms Terms.
 	 */
-	public function get_terms_with_attach( $terms ) {
+	public function get_terms_with_attach($terms)
+	{
 
 		$terms_with_attach = [];
 
-		if ( ! empty( $terms ) ) {
-			foreach ( $terms as $term ) {
+		if (!empty($terms)) {
+			foreach ($terms as $term) {
 
-				$attachment_id_data = get_term_meta( $term->term_id, 'category-image-id' );
+				$attachment_id_data = get_term_meta($term->term_id, 'category-image-id');
 				$attachment_id      = $attachment_id_data[0];
 
 				$term_data = [
@@ -195,13 +210,13 @@ class Home_Page {
 					'slug'     => $term->slug,
 					'taxonomy' => $term->taxonomy,
 					'image'    => [
-						'img_sizes'  => wp_get_attachment_image_sizes( $attachment_id ),
-						'img_src'    => wp_get_attachment_image_src( $attachment_id, 'full' ),
-						'img_srcset' => wp_get_attachment_image_srcset( $attachment_id ),
+						'img_sizes'  => wp_get_attachment_image_sizes($attachment_id),
+						'img_src'    => wp_get_attachment_image_src($attachment_id, 'full'),
+						'img_srcset' => wp_get_attachment_image_srcset($attachment_id),
 					],
 				];
 
-				array_push( $terms_with_attach, $term_data );
+				array_push($terms_with_attach, $term_data);
 			}
 		}
 
@@ -213,44 +228,44 @@ class Home_Page {
 	 *
 	 * @return array $featured_posts Featured Posts.
 	 */
-	public function get_featured_posts() {
+	public function get_featured_posts()
+	{
 
-		if ( empty( $this->plugin_options ) ) {
+		if (empty($this->plugin_options)) {
 			return [];
 		}
 
 		$featured_post_ids = [
-			intval( $this->plugin_options['first_featured_post_id'] ),
-			intval( $this->plugin_options['second_featured_post_id'] ),
-			intval( $this->plugin_options['third_featured_post_id'] ),
+			intval($this->plugin_options['first_featured_post_id']),
+			intval($this->plugin_options['second_featured_post_id']),
+			intval($this->plugin_options['third_featured_post_id']),
 		];
 
 		$featured_posts = [];
 
-		if ( ! empty( $featured_post_ids ) && is_array( $featured_post_ids ) ) {
-			foreach ( $featured_post_ids as $post_ID ) {
+		if (!empty($featured_post_ids) && is_array($featured_post_ids)) {
+			foreach ($featured_post_ids as $post_ID) {
 
-				$author_id     = get_post_field( 'post_author', $post_ID );
-				$attachment_id = get_post_thumbnail_id( $post_ID );
+				$author_id     = get_post_field('post_author', $post_ID);
+				$attachment_id = get_post_thumbnail_id($post_ID);
 
 				$post_data                     = [];
 				$post_data['id']               = $post_ID;
-				$post_data['title']            = get_the_title( $post_ID );
-				$post_data['excerpt']          = get_the_excerpt( $post_ID );
-				$post_data['slug']             = get_post_field( 'post_name', $post_ID );
-				$post_data['date']             = get_the_date( '', $post_ID );
+				$post_data['title']            = get_the_title($post_ID);
+				$post_data['excerpt']          = get_the_excerpt($post_ID);
+				$post_data['slug']             = get_post_field('post_name', $post_ID);
+				$post_data['date']             = get_the_date('', $post_ID);
 				$post_data['attachment_image'] = [
-					'img_sizes'  => wp_get_attachment_image_sizes( $attachment_id ),
-					'img_src'    => wp_get_attachment_image_src( $attachment_id, 'full' ),
-					'img_srcset' => wp_get_attachment_image_srcset( $attachment_id ),
+					'img_sizes'  => wp_get_attachment_image_sizes($attachment_id),
+					'img_src'    => wp_get_attachment_image_src($attachment_id, 'full'),
+					'img_srcset' => wp_get_attachment_image_srcset($attachment_id),
 				];
 				$post_data['meta']             = [
 					'author_id'   => $author_id,
-					'author_name' => get_the_author_meta( 'display_name', $author_id ),
+					'author_name' => get_the_author_meta('display_name', $author_id),
 				];
 
-				array_push( $featured_posts, $post_data );
-
+				array_push($featured_posts, $post_data);
 			}
 		}
 
@@ -258,7 +273,6 @@ class Home_Page {
 			'featuredPostHeading' => $this->plugin_options['featured_post_heading'],
 			'featuredPosts'       => $featured_posts,
 		];
-
 	}
 
 	/**
@@ -268,7 +282,8 @@ class Home_Page {
 	 *
 	 * @return array latest posts
 	 */
-	public function get_latest_posts( $post_type ) {
+	public function get_latest_posts($post_type)
+	{
 
 		$args = [
 			'post_type'              => $post_type,
@@ -281,36 +296,34 @@ class Home_Page {
 
 		];
 
-		$result = new WP_Query( $args );
+		$result = new WP_Query($args);
 
 		$latest_post_ids = $result->get_posts();
 
 		$latest_posts = [];
 
-		if ( ! empty( $latest_post_ids ) && is_array( $latest_post_ids ) ) {
-			foreach ( $latest_post_ids as $post_ID ) {
+		if (!empty($latest_post_ids) && is_array($latest_post_ids)) {
+			foreach ($latest_post_ids as $post_ID) {
 
-				$attachment_id = get_post_thumbnail_id( $post_ID );
+				$attachment_id = get_post_thumbnail_id($post_ID);
 
 				$post_data                     = [];
 				$post_data['id']               = $post_ID;
-				$post_data['title']            = get_the_title( $post_ID );
-				$post_data['excerpt']          = get_the_excerpt( $post_ID );
+				$post_data['title']            = get_the_title($post_ID);
+				$post_data['excerpt']          = get_the_excerpt($post_ID);
 				$post_data['attachment_image'] = [
-					'img_sizes'  => wp_get_attachment_image_sizes( $attachment_id ),
-					'img_src'    => wp_get_attachment_image_src( $attachment_id, 'full' ),
-					'img_srcset' => wp_get_attachment_image_srcset( $attachment_id ),
+					'img_sizes'  => wp_get_attachment_image_sizes($attachment_id),
+					'img_src'    => wp_get_attachment_image_src($attachment_id, 'full'),
+					'img_srcset' => wp_get_attachment_image_srcset($attachment_id),
 				];
 
-				array_push( $latest_posts, $post_data );
-
+				array_push($latest_posts, $post_data);
 			}
 		}
 
 		return [
-			'latestPostHeading' => ! empty( $this->plugin_options['latest_post_heading'] ) ? $this->plugin_options['latest_post_heading'] : '',
+			'latestPostHeading' => !empty($this->plugin_options['latest_post_heading']) ? $this->plugin_options['latest_post_heading'] : '',
 			'latestPosts'       => $latest_posts,
 		];
 	}
-
 }
