@@ -1,4 +1,5 @@
 <?php
+
 /**
  * API Settings.
  *
@@ -12,14 +13,16 @@ use Headless_CMS\Features\Inc\Traits\Singleton;
 /**
  * Class API_Settings
  */
-class API_Settings {
+class API_Settings
+{
 
 	use Singleton;
 
 	/**
 	 * Construct method.
 	 */
-	protected function __construct() {
+	protected function __construct()
+	{
 		$this->setup_hooks();
 	}
 
@@ -28,30 +31,30 @@ class API_Settings {
 	 *
 	 * @return void
 	 */
-	protected function setup_hooks() {
+	protected function setup_hooks()
+	{
 
 		// If the site url is same as home url, then don't make any updates.
-		if ( get_site_url() === get_home_url() ) {
+		if (get_site_url() === get_home_url()) {
 			return null;
 		}
 
 		/**
 		 * Update site and home URLs for rest api call.
 		 */
-		add_filter( 'rest_url', [ $this, 'force_update_rest_url' ] );
+		add_filter('rest_url', [$this, 'force_update_rest_url']);
 
 		/**
 		 * Update site and home URLs for rest api call for WooCommerce.
 		 *
 		 * @see https://github.com/woocommerce/woocommerce/blob/0c44ab857a9b041727ab8c16fd182ee9b700818e/includes/class-wc-rest-authentication.php#L41
 		 */
-		add_action( 'determine_current_user', [ $this, 'update_site_and_home_url' ], 1, 1 );
+		add_action('determine_current_user', [$this, 'update_site_and_home_url'], 1, 1);
 
 		/**
 		 * Reset the site and home URLs after authentication rest api call for WooCommerce.
 		 */
-		add_action( 'determine_current_user', [ $this, 'reset_site_and_home_url' ], 20, 1 );
-
+		add_action('determine_current_user', [$this, 'reset_site_and_home_url'], 20, 1);
 	}
 
 	/**
@@ -67,10 +70,11 @@ class API_Settings {
 	 *
 	 * @return mixed
 	 */
-	function update_site_and_home_url( $user_id ) {
+	function update_site_and_home_url($user_id)
+	{
 
-		add_filter( 'home_url', [ $this, 'update_urls_callback' ], 1, 2 );
-		add_filter( 'site_url', [ $this, 'update_urls_callback' ], 1, 2 );
+		add_filter('home_url', [$this, 'update_urls_callback'], 1, 2);
+		add_filter('site_url', [$this, 'update_urls_callback'], 1, 2);
 
 		return $user_id;
 	}
@@ -83,7 +87,8 @@ class API_Settings {
 	 *
 	 * @return string
 	 */
-	public function update_urls_callback( $url, $path ) {
+	public function update_urls_callback($url, $path)
+	{
 
 		$url = get_option('siteurl');
 
@@ -95,10 +100,11 @@ class API_Settings {
 	 *
 	 * @param int $user_id User id
 	 */
-	public function reset_site_and_home_url( $user_id ) {
+	public function reset_site_and_home_url($user_id)
+	{
 
-		remove_filter( 'home_url', [ $this, 'update_urls_callback' ], 1 );
-		remove_filter( 'site_url', [ $this, 'update_urls_callback' ], 1 );
+		remove_filter('home_url', [$this, 'update_urls_callback'], 1);
+		remove_filter('site_url', [$this, 'update_urls_callback'], 1);
 
 		return $user_id;
 	}
@@ -112,8 +118,8 @@ class API_Settings {
 	 *
 	 * @return string backend url.
 	 */
-	public function force_update_rest_url( $url ) {
-		return str_replace( get_home_url(), get_site_url(), $url );
+	public function force_update_rest_url($url)
+	{
+		return str_replace(get_home_url(), get_site_url(), $url);
 	}
-
 }
