@@ -1,13 +1,13 @@
 <?php
 /**
- * Plugin Name: Headless CMS
- * Description: A WordPress plugin that adds features to use WordPress as a headless CMS with any front-end environment using REST API
- * Plugin URI:  https://codeytek.com/headless-cms-wordpress-plugin
+ * Plugin Name: Enhanced Headless CMS for WooCommerce & WordPress 
+ * Description: A WordPress plugin designed to enhance the use of WordPress as a headless CMS for any front-end environment, supporting both REST API and GraphQL. This plugin is versatile, catering not only to standard WordPress sites but also to WooCommerce-powered e-commerce platforms, providing a range of features for efficient and flexible integration.
+ * Plugin URI:  https://github.com/digi4care/headless-cms/
  * Author:      Imran Sayed
  * Author URI:  https://codeytek.com
  * License:     GPL2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Version:     2.0.4
+ * Version:     2.0.5
  * Text Domain: headless-cms
  *
  * @package headless-cms
