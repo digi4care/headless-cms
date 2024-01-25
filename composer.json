@@ -1,6 +1,6 @@
 {
-  "name": "imranhsayed/headless-cms",
-  "description": "A WordPress plugin that adds features to use WordPress as a headless CMS with any front-end environment using REST API",
+  "name": "digi4care/headless-cms",
+  "description": "A WordPress plugin designed to enhance the use of WordPress as a headless CMS for any front-end environment, supporting both REST API and GraphQL. This plugin is versatile, catering not only to standard WordPress sites but also to WooCommerce-powered e-commerce platforms, providing a range of features for efficient and flexible integration.",
   "type": "wordpress-plugin",
   "license": "GPL-3.0+",
   "version": "2.0.3",
@@ -11,11 +11,15 @@
   "require": {
 	"php": ">=5.4.0"
   },
-  "homepage": "https://github.com/imranhsayed/headless-cms",
+  "homepage": "https://github.com/digi4care/headless-cms",
   "authors": [
-	{
-	  "name": "Imran Sayed",
-	  "email": "codeytek.academy@gmail.com"
-	}
+    {
+      "name": "Chris Engelhard",
+      "email": "github@digi4care.nl"
+    },
+    {
+      "name": "Imran Sayed",
+      "email": "codeytek.academy@gmail.com"
+    }
   ]
 }
